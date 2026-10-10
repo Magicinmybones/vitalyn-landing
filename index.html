@@ -6,6 +6,16 @@
 <title>Vitalyn AI — The AI Agent for Healthcare Operations</title>
 <meta name="description" content="From appointment booking to patient follow-ups, automate repetitive workflows while providing personalized support at scale.">
 <meta name="theme-color" content="#FD4F0F">
+<script>
+/* Set entrance states before the first paint. Content stays visible without JS. */
+if ('animate' in Element.prototype && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  document.documentElement.classList.add('entry-pending');
+  window.entryFallback = setTimeout(function () {
+    if (window.finishEntry) window.finishEntry();
+    else document.documentElement.classList.remove('entry-pending');
+  }, 4000);
+}
+</script>
 <style>
 /* ==========================================================================
    Fonts — Inter Display subset, embedded (works offline)
@@ -477,6 +487,23 @@ h1,h2,p,figure,ul{margin:0}
 }
 
 
+/* Initial states only; the class and every animation are removed at completion. */
+.entry-pending .announce p,
+.entry-pending .brand,
+.entry-pending .btn-ghost,
+.entry-pending .menu-toggle,
+.entry-pending .hero__sub,
+.entry-pending .cta__ring,
+.entry-pending .btn-primary{opacity:0}
+@media (min-width:1024px) and (min-aspect-ratio:1/1){
+  .entry-pending .nav-links li{opacity:0}
+  .entry-pending .hero h1 .l{clip-path:inset(0 0 105% 0)}
+  .entry-pending .card--appts,
+  .entry-pending .stack{opacity:0}
+}
+@media (max-width:1023.98px), (max-aspect-ratio:1/1){
+  .entry-pending .hero h1{clip-path:inset(0 0 105% 0)}
+}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -628,6 +655,65 @@ h1,h2,p,figure,ul{margin:0}
   track.addEventListener('scroll',function(){cancelAnimationFrame(raf);raf=requestAnimationFrame(sync)},{passive:true});
   if('ResizeObserver' in window)new ResizeObserver(build).observe(track);else window.addEventListener('resize',build);
   build();
+})();
+</script>
+<script>
+(function () {
+  if (!document.documentElement.classList.contains('entry-pending')) return;
+
+  var players = [], done = false;
+  window.finishEntry = function () {
+    if (done) return;
+    done = true;
+    clearTimeout(window.entryFallback);
+    document.documentElement.classList.remove('entry-pending');
+    players.forEach(function (player) { player.cancel(); });
+    window.finishEntry = null;
+  };
+
+  var ease = 'cubic-bezier(.22,1,.36,1)';
+  function reveal(selector, from, at, duration, curve) {
+    var element = document.querySelector(selector);
+    if (!element || getComputedStyle(element).display === 'none') return;
+    var to = {};
+    Object.keys(from).forEach(function (key) {
+      to[key] = key === 'opacity' ? 1 : key === 'clipPath' ? 'inset(0 0 0 0)' : '0 0';
+    });
+    players.push(element.animate([from, to], {
+      delay: at, duration: duration, easing: curve || ease, fill: 'both'
+    }));
+  }
+
+  var compact = matchMedia('(max-width:1023.98px), (max-aspect-ratio:1/1)').matches;
+  reveal('.announce p', {opacity:0, translate:'0 6px'}, 0, 460);
+  reveal('.brand', {opacity:0, translate:'0 8px'}, 100, 520);
+  if (compact) {
+    reveal('.menu-toggle', {opacity:0, translate:'0 6px'}, 250, 480);
+  } else {
+    document.querySelectorAll('.nav-links li').forEach(function (item, i) {
+      players.push(item.animate([
+        {opacity:0, translate:'0 6px'}, {opacity:1, translate:'0 0'}
+      ], {delay:210 + i * 55, duration:430, easing:ease, fill:'both'}));
+    });
+  }
+  reveal('.btn-ghost', {opacity:0, translate:'0 6px'}, 340, 470);
+
+  if (compact) {
+    reveal('.hero h1', {clipPath:'inset(0 0 105% 0)', translate:'0 12px'}, 390, 860);
+  } else {
+    reveal('.hero h1 .l1', {clipPath:'inset(0 0 105% 0)', translate:'0 14px'}, 370, 800);
+    reveal('.hero h1 .l2', {clipPath:'inset(0 0 105% 0)', translate:'0 14px'}, 520, 840);
+  }
+  reveal('.hero__sub', {opacity:0, translate:'0 9px'}, 850, 620);
+  reveal('.cta__ring', {opacity:0}, 1110, 430);
+  reveal('.btn-primary', {opacity:0, translate:'0 10px'}, 1140, 590);
+  if (!compact) {
+    reveal('.card--appts', {opacity:0, translate:'0 12px'}, 1380, 690);
+    reveal('.stack', {opacity:0, translate:'0 12px'}, 1510, 710);
+  }
+
+  Promise.all(players.map(function (player) { return player.finished.catch(function () {}); }))
+    .then(window.finishEntry);
 })();
 </script>
 </body>

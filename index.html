@@ -495,6 +495,11 @@ h1,h2,p,figure,ul{margin:0}
 .entry-pending .hero__sub,
 .entry-pending .cta__ring,
 .entry-pending .btn-primary{opacity:0}
+.entry-pending .chart > g,
+.entry-pending .chart > line:first-of-type,
+.entry-pending .chart > circle{opacity:0}
+.entry-pending .chart > line:nth-of-type(n+2){stroke-dasharray:400;stroke-dashoffset:400}
+.entry-pending .sat__wave{clip-path:inset(0 50% 0 50%)}
 @media (min-width:1024px) and (min-aspect-ratio:1/1){
   .entry-pending .nav-links li{opacity:0}
   .entry-pending .hero h1 .l{clip-path:inset(0 0 105% 0)}
@@ -710,6 +715,31 @@ h1,h2,p,figure,ul{margin:0}
   if (!compact) {
     reveal('.card--appts', {opacity:0, translate:'0 12px'}, 1380, 690);
     reveal('.stack', {opacity:0, translate:'0 12px'}, 1510, 710);
+  }
+
+  function panelIsVisible(selector) {
+    var element = document.querySelector(selector), panel = element && element.closest('.panel');
+    var showcase = document.querySelector('.showcase');
+    if (!panel || !showcase) return false;
+    var a = panel.getBoundingClientRect(), b = showcase.getBoundingClientRect();
+    return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+  }
+  if (panelIsVisible('.card--appts')) {
+    reveal('.chart > g', {opacity:0}, 1580, 400);
+    reveal('.chart > line:first-of-type', {opacity:0}, 1620, 400);
+    document.querySelectorAll('.chart > line:nth-of-type(n+2)').forEach(function (line, i) {
+      players.push(line.animate([
+        {strokeDasharray:'400', strokeDashoffset:'400'},
+        {strokeDasharray:'400', strokeDashoffset:'0'}
+      ], {delay:1670 + i * 80, duration:740, easing:'cubic-bezier(.55,0,.2,1)', fill:'both'}));
+    });
+    document.querySelectorAll('.chart > circle').forEach(function (circle) {
+      players.push(circle.animate([{opacity:0}, {opacity:1}],
+        {delay:2210, duration:280, easing:ease, fill:'both'}));
+    });
+  }
+  if (panelIsVisible('.card--sat')) {
+    reveal('.sat__wave', {clipPath:'inset(0 50% 0 50%)'}, 1850, 650);
   }
 
   Promise.all(players.map(function (player) { return player.finished.catch(function () {}); }))
